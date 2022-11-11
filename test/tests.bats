@@ -144,3 +144,16 @@ assert_output() {
 	xte
 	assert_output "generic terminal"
 }
+
+@test "quotes commands and arguments correctly" {
+	export XDG_DATA_HOME="$BATS_TEST_DIRNAME/data/quoting"
+	xte and 'custom arguments'
+	assert_output <<-'EOF'
+quoting terminal
+with 'complex' arguments
+and \"back\\slashes\"
+-e
+and
+custom arguments
+	EOF
+}
