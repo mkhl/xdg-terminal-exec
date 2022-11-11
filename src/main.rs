@@ -1,5 +1,5 @@
 use std::{
-    collections::HashSet, env, error::Error, fs, io, iter::once, os::unix::process::CommandExt,
+    collections::{HashSet, VecDeque}, env, error::Error, fs, io, iter::once, os::unix::process::CommandExt,
     path::PathBuf, process::Command,
 };
 
@@ -96,21 +96,19 @@ fn entry(path: &PathBuf, desktops: &[String]) -> Option<Entry> {
 
 fn run(entry: &Entry, args: &[String]) -> Option<io::Error> {
     let section = entry.section("Desktop Entry");
-    let mut cmd = Command::new("sh");
-    cmd.arg("-c");
     let exec = section.attr("Exec").expect("attribute `Exec` is required");
+    let exec = shlex::split(exec)?;
+    let mut exec = VecDeque::from(exec);
     let exec_arg = section
         .attr("X-ExecArg")
         .or_else(|| section.attr("ExecArg"))
         .unwrap_or("-e");
-    if args.is_empty() {
-        cmd.arg(exec);
-    } else {
-        let mut exec = vec![exec.to_owned(), exec_arg.to_owned()];
-        exec.extend_from_slice(args);
-        cmd.arg(exec.join(" "));
+    if !args.is_empty() {
+        exec.push_back(exec_arg.to_owned());
+        exec.extend(args.iter().map(ToOwned::to_owned));
     }
-    Some(cmd.exec())
+    let cmd = exec.pop_front()?;
+    Some(Command::new(cmd).args(exec).exec())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
