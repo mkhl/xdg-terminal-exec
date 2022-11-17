@@ -8,15 +8,14 @@ use freedesktop_entry_parser::Entry;
 const XDG_TERMINALS: &str = "xdg-terminals";
 const XDG_TERMINALS_LIST: &str = "xdg-terminals.list";
 
-fn desktops() -> Result<Vec<String>, env::VarError> {
-    let xdg_current_desktop = env::var("XDG_CURRENT_DESKTOP")?;
-    let ids = xdg_current_desktop
+fn desktops() -> Vec<String> {
+    env::var("XDG_CURRENT_DESKTOP")
+        .unwrap_or_default()
         // .to_ascii_lowercase()
         .split(':')
         .filter(|s| !s.is_empty())
         .map(|s| s.to_owned())
-        .collect();
-    Ok(ids)
+        .collect()
 }
 
 fn config_file_names(desktops: &[String]) -> Vec<String> {
@@ -114,7 +113,7 @@ fn run(entry: &Entry, args: &[String]) -> Option<io::Error> {
 fn main() -> Result<(), Box<dyn Error>> {
     let mut seen: HashSet<PathBuf> = HashSet::new();
     let args: Vec<String> = env::args().skip(1).collect();
-    let desktops = desktops()?;
+    let desktops = desktops();
     let dirs = xdg::BaseDirectories::with_prefix(XDG_TERMINALS)?;
     let mut handle = |entry_path: &PathBuf| {
         if !seen.insert(entry_path.clone()) {
