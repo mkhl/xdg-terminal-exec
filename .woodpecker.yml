@@ -1,0 +1,9 @@
+pipeline:
+  build:
+    image: rust:alpine
+    environment:
+      - XTE=target/debug/xdg-terminal-exec
+    commands:
+      - apk add musl-dev bats ncurses
+      - cargo build --locked
+      - bats test
